@@ -114,7 +114,7 @@ ask_shared() {
     ask AES_KEY     "AES key used to encrypt stored student credentials." "" secret
     ask AES_IV      "AES IV that goes with it." "" secret
     ask DEVICE_ID   "Device id the portal expects." "" secret
-    ask SMART_SCHEDULE_SKIP "Comma-separated class codes the smart scheduler ignores."
+    ask SMART_SCHEDULE_SKIP "Scan filter mode: blank/0 = normal, 1 = also skip classes outside the known schedule, -1 = force scan any course (no filters)."
 
     section "Display"
     ask BOT_TIMEZONE "IANA timezone for every time the bots print, e.g. Asia/Kuala_Lumpur. The proot has no timezone of its own, so without this everything shows in UTC." "Asia/Kuala_Lumpur"

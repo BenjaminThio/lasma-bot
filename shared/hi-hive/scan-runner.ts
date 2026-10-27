@@ -8,6 +8,11 @@
  *   3. skip if the student isn't enrolled in the course
  *   4. optional smart-schedule skip (SMART_SCHEDULE_SKIP=1)
  *   5. otherwise submit the scan and map the server status
+ *
+ * SMART_SCHEDULE_SKIP=-1 is force mode: steps 2-4 (already recorded, not
+ * enrolled incl. course aliases, schedule) are skipped and every verified
+ * account scans whatever course the QR is for. Step 1 still runs so a QR is
+ * never submitted under credentials that belong to someone else.
  */
 
 import { scanQr } from "./scan-qr.js";
@@ -17,7 +22,12 @@ import { canonicalCode } from "./course-aliases.js";
 import { fromScanStatus, type ReportStatus } from "./scan-status.js";
 import { decodeQr } from "./legacy/decode-qr.js";
 
-const SMART_SCHEDULE_SKIP = process.env["SMART_SCHEDULE_SKIP"] === "1";
+// "1" = smart schedule skip, "-1" = force scan (no filters), anything else = normal
+const SCHEDULE_MODE       = (process.env["SMART_SCHEDULE_SKIP"] ?? "").trim();
+const SMART_SCHEDULE_SKIP = SCHEDULE_MODE === "1";
+const FORCE_SCAN          = SCHEDULE_MODE === "-1";
+
+if (FORCE_SCAN) console.log("[autoScan] SMART_SCHEDULE_SKIP=-1: force mode, course/enrolment/schedule filters are off");
 
 /** Scan one account for one QR. Never throws — returns a ReportStatus. */
 export async function scanOneAccount(
@@ -42,9 +52,11 @@ export async function scanOneAccount(
     }
     console.log(`[autoScan] ✔ ${label} verified: ${check.reason}`);
 
+    if (FORCE_SCAN) console.log(`[autoScan] ⏩ ${label}: force mode, skipping course filters`);
+
     // ── Skip if this class is ALREADY recorded as attended ────────────────
     // Reuses the attendance we just fetched for validation (no extra call).
-    if (check.attendance && qrInfo?.courseCode && qrInfo?.datetime) {
+    if (!FORCE_SCAN && check.attendance && qrInfo?.courseCode && qrInfo?.datetime) {
       const already = isAlreadyRecorded(check.attendance, {
         courseCode:   qrInfo.courseCode,
         classDatetime: qrInfo.datetime,
@@ -60,7 +72,7 @@ export async function scanOneAccount(
     // If the student has attendance history (week 2+) and the scanned course
     // simply isn't among their enrolled courses, skip — they don't take it.
     // (Uses canonical codes, so dual-code classes like UECS2403/2103 count.)
-    if (qrInfo?.courseCode && check.enrolledCodes.size > 0) {
+    if (!FORCE_SCAN && qrInfo?.courseCode && check.enrolledCodes.size > 0) {
       const wantCode = canonicalCode(qrInfo.courseCode);
       if (!check.enrolledCodes.has(wantCode)) {
         console.log(`[autoScan] 🚫 ${label}: not enrolled in ${qrInfo.courseCode} (${wantCode})`);
