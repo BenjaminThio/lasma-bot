@@ -1,11 +1,9 @@
 // Each inner array is one equivalence group - all codes in it are "the same class".
 // Add more groups / codes as you discover them.
 const EQUIVALENCE_GROUPS: string[][] = [
-  ["UECS2033", "EECS2033"],
-  ["UECS2194", "EECS2194", "UECS2094"],
-  ["UECS2344", "EECS2344"],
-  ["UECS2354", "EECS2354"],
-  ["UECS2403", "UECS2423", "UECS2103"]
+  ["MPU3182"],
+  ["MPU33213", "EPU33213"],
+  ["UECS2523"]
 ];
 
 // Build a lookup: code => canonical code (the first code in its group).
